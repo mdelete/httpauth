@@ -47,6 +47,7 @@ type UserData struct {
 	Email    string `bson:"Email"`
 	Hash     []byte `bson:"Hash"`
 	Role     string `bson:"Role"`
+	Group    int    `bson:"Group"`
 }
 
 // Authorizer structures contain the store of user session cookies a reference
@@ -229,7 +230,7 @@ func (a Authorizer) Update(rw http.ResponseWriter, req *http.Request, p string, 
 		email = user.Email
 	}
 
-	newuser := UserData{username, email, hash, user.Role}
+	newuser := UserData{username, email, hash, user.Role, 0}
 
 	err = a.backend.SaveUser(newuser)
 	if err != nil {

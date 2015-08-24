@@ -11,7 +11,7 @@ import (
 type SqlAuthBackend struct {
 	driverName     string
 	dataSourceName string
-	db             *sql.DB
+	Db             *sql.DB
 
 	// prepared statements
 	userStmt   *sql.Stmt
@@ -55,8 +55,8 @@ func NewSqlAuthBackend(driverName, dataSourceName string) (b SqlAuthBackend, e e
 	if err != nil {
 		return b, mksqlerror(err.Error())
 	}
-	b.db = db
-	_, err = db.Exec(`create table if not exists goauth (Username varchar(255), Email varchar(255), Hash varchar(255), Role varchar(255), primary key (Username))`)
+	b.Db = db
+	_, err = db.Exec(`create table if not exists goauth (Username varchar(255), Email varchar(255), Hash varchar(255), Role varchar(255), Pgroup int, primary key (Username))`)
 	if err != nil {
 		return b, mksqlerror(err.Error())
 	}
@@ -70,11 +70,11 @@ func NewSqlAuthBackend(driverName, dataSourceName string) (b SqlAuthBackend, e e
 	//
 	// Thanks to mjhall for letting me know about this.
 	if driverName == "postgres" {
-		b.userStmt, err = db.Prepare(`select Email, Hash, Role from goauth where Username = $1`)
+		b.userStmt, err = db.Prepare(`select Email, Hash, Role, Pgroup from goauth where Username = $1`)
 		if err != nil {
 			return b, mksqlerror(fmt.Sprintf("userstmt: %v", err))
 		}
-		b.usersStmt, err = db.Prepare(`select Username, Email, Hash, Role from goauth`)
+		b.usersStmt, err = db.Prepare(`select Username, Email, Hash, Role, Pgroup from goauth`)
 		if err != nil {
 			return b, mksqlerror(fmt.Sprintf("usersstmt: %v", err))
 		}
@@ -91,11 +91,11 @@ func NewSqlAuthBackend(driverName, dataSourceName string) (b SqlAuthBackend, e e
 			return b, mksqlerror(fmt.Sprintf("deletestmt: %v", err))
 		}
 	} else {
-		b.userStmt, err = db.Prepare(`select Email, Hash, Role from goauth where Username = ?`)
+		b.userStmt, err = db.Prepare(`select Email, Hash, Role, Pgroup from goauth where Username = ?`)
 		if err != nil {
 			return b, mksqlerror(fmt.Sprintf("userstmt: %v", err))
 		}
-		b.usersStmt, err = db.Prepare(`select Username, Email, Hash, Role from goauth`)
+		b.usersStmt, err = db.Prepare(`select Username, Email, Hash, Role, Pgroup from goauth`)
 		if err != nil {
 			return b, mksqlerror(fmt.Sprintf("usersstmt: %v", err))
 		}
@@ -140,13 +140,14 @@ func (b SqlAuthBackend) Users() (us []UserData, e error) {
 	var (
 		username, email, role string
 		hash                  []byte
+		group                 int
 	)
 	for rows.Next() {
-		err = rows.Scan(&username, &email, &hash, &role)
+		err = rows.Scan(&username, &email, &hash, &role, &group)
 		if err != nil {
 			return us, mksqlerror(err.Error())
 		}
-		us = append(us, UserData{username, email, hash, role})
+		us = append(us, UserData{username, email, hash, role, group})
 	}
 	return us, nil
 }
@@ -179,7 +180,7 @@ func (b SqlAuthBackend) DeleteUser(username string) error {
 
 // Close cleans up the backend by terminating the database connection.
 func (b SqlAuthBackend) Close() {
-	b.db.Close()
+	b.Db.Close()
 	b.userStmt.Close()
 	b.usersStmt.Close()
 	b.insertStmt.Close()
