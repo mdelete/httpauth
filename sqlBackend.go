@@ -120,7 +120,7 @@ func NewSqlAuthBackend(driverName, dataSourceName string) (b SqlAuthBackend, e e
 // ErrMissingUser if user is not found.
 func (b SqlAuthBackend) User(username string) (user UserData, e error) {
 	row := b.userStmt.QueryRow(username)
-	err := row.Scan(&user.Email, &user.Hash, &user.Role)
+	err := row.Scan(&user.Email, &user.Hash, &user.Role, &user.Group)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return user, ErrMissingUser
