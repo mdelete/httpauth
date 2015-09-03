@@ -56,7 +56,7 @@ func NewSqlAuthBackend(driverName, dataSourceName string) (b SqlAuthBackend, e e
 		return b, mksqlerror(err.Error())
 	}
 	b.Db = db
-	_, err = db.Exec(`create table if not exists goauth (Username varchar(255), Email varchar(255), Hash varchar(255), Role varchar(255), Pgroup int, primary key (Username))`)
+	_, err = db.Exec(`create table if not exists goauth (Username varchar(255), Email varchar(255), Hash varchar(255), Role varchar(255), Pgroup int not null default 0, primary key (Username))`)
 	if err != nil {
 		return b, mksqlerror(err.Error())
 	}
